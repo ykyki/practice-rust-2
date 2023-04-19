@@ -1,0 +1,13 @@
+unstable_features = true
+ignore = ["**/lib.rs"]
+
+reorder_imports = true
+reorder_modules = true
+
+tab_spaces = 4
+hard_tabs = false
+newline_style = "Unix"
+
+max_width = 100
+
+blank_lines_upper_bound = 1
