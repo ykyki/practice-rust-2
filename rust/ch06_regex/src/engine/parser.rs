@@ -31,7 +31,7 @@ impl Display for ParseError {
                 write!(f, "ParseError: invalid escape: pos = {pos}, char = '{c}'")
             }
             ParseError::InvalidRightParen(pos) => {
-                write!(f, "ParseError: invalid right parentheis: pos = {pos}")
+                write!(f, "ParseError: invalid right parenthesis: pos = {pos}")
             }
             ParseError::NoPrev(pos) => write!(f, "ParseError: no previous expression: pos = {pos}"),
             ParseError::NoRightParen => {
