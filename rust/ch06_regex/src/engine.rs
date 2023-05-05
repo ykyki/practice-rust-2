@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 mod codegen;
+mod evaluator;
 mod parser;
 
 #[derive(Debug)]
