@@ -95,13 +95,24 @@ pub fn parse(expr: &str) -> Result<AST, DynError> {
                         return Err(Box::new(ParseError::InvalidRightParen(i)));
                     }
                 }
-                '|' => {}
-                '\\' => {}
+                '|' => {
+                    if seq.is_empty() {
+                        return Err(Box::new(ParseError::NoPrev(i)));
+                    } else {
+                        let prev = mem::take(&mut seq);
+                        seq_or.push(AST::Seq(prev));
+                    }
+                }
+                '\\' => state = ParseState::Escape,
                 _ => {
                     seq.push(AST::Char(c));
                 }
             },
-            ParseState::Escape => {}
+            ParseState::Escape => {
+                let ast = parse_escape(i, c)?;
+                seq.push(ast);
+                state = ParseState::Char;
+            }
         }
     }
 
