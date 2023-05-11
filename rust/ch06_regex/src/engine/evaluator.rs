@@ -62,7 +62,7 @@ fn eval_depth(
     }
 }
 
-fn eval_width(inst: &[Instruction], line: &[char]) -> Result<bool, EvalError> {
+fn eval_width(_inst: &[Instruction], _line: &[char]) -> Result<bool, EvalError> {
     todo!()
 }
 
