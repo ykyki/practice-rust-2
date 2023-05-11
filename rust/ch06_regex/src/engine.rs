@@ -7,6 +7,7 @@ mod evaluator;
 mod parser;
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
 pub enum Instruction {
     Char(char),
     Match,

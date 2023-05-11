@@ -164,3 +164,63 @@ pub fn get_code(ast: &AST) -> Result<Vec<Instruction>, CodeGenError> {
     generator.gen_code(ast)?;
     Ok(generator.insts)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::engine::parser::parse;
+    use crate::engine::parser::AST;
+    use crate::helper::DynError;
+
+    use super::Instruction::*;
+    use super::*;
+
+    #[test]
+    fn test_get_code() -> Result<(), DynError> {
+        assert_eq!(get_code(&AST::Char('a'))?, vec![Char('a'), Match]);
+        assert_eq!(
+            get_code(&AST::Or(Box::new(AST::Char('a')), Box::new(AST::Char('b'))))?,
+            vec![Split(1, 3), Char('a'), Jump(4), Char('b'), Match]
+        );
+        // parse関数を使うのは望ましくないがfixtureを作るのが面倒なので仕方なく使う
+        assert_eq!(
+            get_code(&parse("ab|bc")?)?,
+            vec![
+                Split(1, 4),
+                Char('a'),
+                Char('b'),
+                Jump(6),
+                Char('b'),
+                Char('c'),
+                Match
+            ]
+        );
+        assert_eq!(
+            get_code(&parse("ab(de)?")?)?,
+            vec![
+                Char('a'),
+                Char('b'),
+                Split(3, 5),
+                Char('d'),
+                Char('e'),
+                Match
+            ]
+        );
+        assert_eq!(
+            get_code(&parse("a(bc|e+)*")?)?,
+            vec![
+                Char('a'),   // 0:
+                Split(2, 9), // 1: *のsplit
+                Split(3, 6), // 2: |のsplit
+                Char('b'),   // 3:
+                Char('c'),   // 4:
+                Jump(8),     // 5: |のjump
+                Char('e'),   // 6:
+                Split(6, 8), // 7: +のsplit
+                Jump(1),     // 8: *のjump
+                Match
+            ]
+        );
+
+        Ok(())
+    }
+}
