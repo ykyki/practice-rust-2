@@ -30,11 +30,8 @@ fn match_file(expr: &str, file: &str) -> Result<(), DynError> {
 
     for line in reader.lines() {
         let line = line?;
-        for (i, _) in line.char_indices() {
-            if engine::do_matching(expr, &line[i..], true)? {
-                println!("{line}");
-                break;
-            }
+        if engine::match_line(expr, &line)? {
+            println!("{line}");
         }
     }
 

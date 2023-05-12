@@ -50,3 +50,12 @@ pub fn do_matching(expr: &str, line: &str, is_depth: bool) -> Result<bool, DynEr
 
     Ok(evaluator::eval(&code, &line, is_depth)?)
 }
+
+pub(crate) fn match_line(expr: &str, line: &str) -> Result<bool, DynError> {
+    for (i, _) in line.char_indices() {
+        if do_matching(expr, &line[i..], true)? {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
