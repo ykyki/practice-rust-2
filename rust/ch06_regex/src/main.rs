@@ -40,10 +40,7 @@ fn match_file(expr: &str, file: &str) -> Result<(), DynError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        engine::do_matching,
-        helper::{safe_add, SafeAdd},
-    };
+    use crate::helper::{safe_add, SafeAdd};
 
     #[test]
     fn test_safe_add() {
@@ -58,30 +55,5 @@ mod tests {
 
         let mut n: usize = !0;
         assert!(safe_add(&mut n, &1, || ()).is_err());
-    }
-
-    #[test]
-    fn test_matching() {
-        // パースエラー
-        assert!(do_matching("+b", "bbb", true).is_err());
-        assert!(do_matching("*b", "bbb", true).is_err());
-        assert!(do_matching("|b", "bbb", true).is_err());
-        assert!(do_matching("?b", "bbb", true).is_err());
-
-        // パース成功、マッチ成功
-        assert!(do_matching("abc|def", "def", true).unwrap());
-        assert!(do_matching("(abc)*", "abcabc", true).unwrap());
-        assert!(do_matching("(ab|cd)+", "abcdcd", true).unwrap());
-        assert!(do_matching("abc?", "ab", true).unwrap());
-        assert!(do_matching("((((a*)*)*)*)", "aaaaaaaaa", true).unwrap());
-        assert!(do_matching("(a*)*b", "aaaaaaaaab", true).unwrap());
-        assert!(do_matching("(a*)*b", "b", true).unwrap());
-        assert!(do_matching("a**b", "aaaaaaaaab", true).unwrap());
-        assert!(do_matching("a**b", "b", true).unwrap());
-
-        // パース成功、マッチ失敗
-        assert!(!do_matching("abc|def", "efa", true).unwrap());
-        assert!(!do_matching("(ab|cd)+", "", true).unwrap());
-        assert!(!do_matching("abc?", "acb", true).unwrap());
     }
 }

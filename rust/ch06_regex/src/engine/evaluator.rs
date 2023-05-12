@@ -1,5 +1,6 @@
 use std::{error::Error, fmt::Display};
 
+use super::EvalResult;
 use super::Instruction;
 use crate::helper::safe_add;
 
@@ -24,7 +25,9 @@ fn eval_depth(
     line: &[char],
     mut pc: usize,
     mut sp: usize,
-) -> Result<bool, EvalError> {
+) -> Result<EvalResult, EvalError> {
+    let mut should_be_head = false;
+
     loop {
         let next = if let Some(i) = inst.get(pc) {
             i
@@ -39,29 +42,32 @@ fn eval_depth(
                         safe_add(&mut pc, &1, || EvalError::PCOverFlow)?;
                         safe_add(&mut sp, &1, || EvalError::SPOverFlow)?;
                     } else {
-                        return Ok(false);
+                        return Ok(EvalResult::unmatched());
                     }
                 } else {
-                    return Ok(false);
+                    return Ok(EvalResult::unmatched());
                 }
             }
             Instruction::Match => {
-                return Ok(true);
+                return if should_be_head {
+                    Ok(EvalResult::matched_if_head())
+                } else {
+                    Ok(EvalResult::matched())
+                };
             }
             Instruction::Jump(addr) => {
                 pc = *addr;
             }
             Instruction::Split(addr1, addr2) => {
-                if eval_depth(inst, line, *addr1, sp)? || eval_depth(inst, line, *addr2, sp)? {
-                    return Ok(true);
-                } else {
-                    return Ok(false);
-                }
+                return Ok(
+                    eval_depth(inst, line, *addr1, sp)?.merge(&eval_depth(inst, line, *addr2, sp)?)
+                );
             }
             Instruction::Head => {
                 if sp != 0 {
-                    return Ok(false);
+                    return Ok(EvalResult::unmatched());
                 } else {
+                    should_be_head = true;
                     safe_add(&mut pc, &1, || EvalError::PCOverFlow)?;
                 }
             }
@@ -69,11 +75,15 @@ fn eval_depth(
     }
 }
 
-fn eval_width(_inst: &[Instruction], _line: &[char]) -> Result<bool, EvalError> {
+fn eval_width(_inst: &[Instruction], _line: &[char]) -> Result<EvalResult, EvalError> {
     todo!()
 }
 
-pub fn eval(inst: &[Instruction], line: &[char], is_depth: bool) -> Result<bool, EvalError> {
+pub(super) fn eval(
+    inst: &[Instruction],
+    line: &[char],
+    is_depth: bool,
+) -> Result<EvalResult, EvalError> {
     if is_depth {
         eval_depth(inst, line, 0, 0)
     } else {
@@ -84,6 +94,7 @@ pub fn eval(inst: &[Instruction], line: &[char], is_depth: bool) -> Result<bool,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::engine::EvalResult;
     use crate::engine::Instruction::*;
 
     #[test]
@@ -95,7 +106,7 @@ mod tests {
                 0,
                 0
             )?,
-            true
+            EvalResult::matched(),
         );
         assert_eq!(
             eval_depth(
@@ -104,13 +115,16 @@ mod tests {
                 0,
                 0
             )?,
-            true
+            EvalResult::matched(),
         );
-        assert_eq!(eval_depth(&[Match], &[], 0, 0)?, true);
-        assert_eq!(eval_depth(&[Char('b')], &['a'], 0, 0)?, false);
+        assert_eq!(eval_depth(&[Match], &[], 0, 0)?, EvalResult::matched());
+        assert_eq!(
+            eval_depth(&[Char('b')], &['a'], 0, 0)?,
+            EvalResult::unmatched()
+        );
         assert_eq!(
             eval_depth(&[Jump(2), Char('a'), Match], &['b'], 0, 0)?,
-            true
+            EvalResult::matched(),
         );
         assert_eq!(
             eval_depth(
@@ -119,7 +133,7 @@ mod tests {
                 0,
                 0
             )?,
-            true
+            EvalResult::matched(),
         );
         assert_eq!(
             eval_depth(
@@ -128,15 +142,15 @@ mod tests {
                 0,
                 0
             )?,
-            true
+            EvalResult::matched(),
         );
         assert_eq!(
             eval_depth(&[Head, Char('a'), Char('b'), Match], &['a', 'b'], 0, 0)?,
-            true
+            EvalResult::matched_if_head(),
         );
         assert_eq!(
             eval_depth(&[Char('a'), Head, Char('b'), Match], &['a', 'b'], 0, 0)?,
-            false
+            EvalResult::unmatched(),
         );
         assert_eq!(
             eval_depth(
@@ -153,7 +167,7 @@ mod tests {
                 0,
                 0
             )?,
-            true
+            EvalResult::matched_if_head()
         );
         assert_eq!(
             eval_depth(
@@ -170,7 +184,7 @@ mod tests {
                 0,
                 0
             )?,
-            true
+            EvalResult::matched()
         );
         assert_eq!(
             eval_depth(
@@ -188,7 +202,7 @@ mod tests {
                 0,
                 0
             )?,
-            false
+            EvalResult::unmatched()
         );
         assert_eq!(
             eval_depth(
@@ -206,7 +220,7 @@ mod tests {
                 0,
                 0
             )?,
-            true
+            EvalResult::matched()
         );
 
         Ok(())
