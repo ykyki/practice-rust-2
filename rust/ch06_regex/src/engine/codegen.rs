@@ -43,6 +43,7 @@ impl Generator {
     fn gen_expr(&mut self, ast: &AST) -> Result<(), CodeGenError> {
         match ast {
             AST::Char(c) => self.gen_char(*c)?,
+            AST::Caret => self.gen_caret()?,
             AST::Or(e1, e2) => self.gen_or(e1, e2)?,
             AST::Plus(e) => self.gen_plus(e)?,
             AST::Star(e) => {
@@ -69,6 +70,13 @@ impl Generator {
 
     fn gen_char(&mut self, c: char) -> Result<(), CodeGenError> {
         let inst = Instruction::Char(c);
+        self.insts.push(inst);
+        self.inc_pc()?;
+        Ok(())
+    }
+
+    fn gen_caret(&mut self) -> Result<(), CodeGenError> {
+        let inst = Instruction::Head;
         self.insts.push(inst);
         self.inc_pc()?;
         Ok(())
@@ -218,6 +226,23 @@ mod tests {
                 Split(6, 8), // 7: +のsplit
                 Jump(1),     // 8: *のjump
                 Match
+            ]
+        );
+        assert_eq!(get_code(&parse("^a")?)?, vec![Head, Char('a'), Match]);
+        assert_eq!(
+            get_code(&parse("a^a")?)?,
+            vec![Char('a'), Head, Char('a'), Match]
+        );
+        assert_eq!(
+            get_code(&parse("(a|^b)c")?)?,
+            vec![
+                Split(1, 3), // 0:
+                Char('a'),   // 1:
+                Jump(5),     // 2:
+                Head,        // 3:
+                Char('b'),   // 4:
+                Char('c'),   // 5:
+                Match,       // 6:
             ]
         );
 

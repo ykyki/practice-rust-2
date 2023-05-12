@@ -11,6 +11,7 @@ pub enum AST {
     Question(Box<AST>),
     Or(Box<AST>, Box<AST>),
     Seq(Vec<AST>),
+    Caret,
 }
 
 #[derive(Debug)]
@@ -104,6 +105,7 @@ pub fn parse(expr: &str) -> Result<AST, DynError> {
                     }
                 }
                 '\\' => state = ParseState::Escape,
+                '^' => seq.push(AST::Caret),
                 _ => {
                     seq.push(AST::Char(c));
                 }
