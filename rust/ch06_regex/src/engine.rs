@@ -105,7 +105,6 @@ pub fn do_matching(expr: &str, line: &str, is_depth: bool) -> Result<bool, DynEr
 pub(crate) fn match_line(expr: &str, line: &str) -> Result<bool, DynError> {
     let ast = parser::parse(expr)?;
     let code = codegen::get_code(&ast)?;
-    println!("code: {:?}", code);
 
     for (i, _) in line.char_indices() {
         let partial_line = line[i..].chars().collect::<Vec<_>>();
@@ -113,7 +112,6 @@ pub(crate) fn match_line(expr: &str, line: &str) -> Result<bool, DynError> {
         let result = eval(&code, &partial_line, true)?;
         if result.matched {
             if !result.should_be_head || i == 0 {
-                println!("matched: {}, {:?}", i, result);
                 return Ok(true);
             } else {
                 continue;
