@@ -58,6 +58,13 @@ fn eval_depth(
                     return Ok(false);
                 }
             }
+            Instruction::Head => {
+                if sp != 0 {
+                    return Ok(false);
+                } else {
+                    safe_add(&mut pc, &1, || EvalError::PCOverFlow)?;
+                }
+            }
         }
     }
 }
@@ -118,6 +125,84 @@ mod tests {
             eval_depth(
                 &[Char('a'), Split(2, 4), Char('b'), Char('c'), Match,],
                 &['a'],
+                0,
+                0
+            )?,
+            true
+        );
+        assert_eq!(
+            eval_depth(&[Head, Char('a'), Char('b'), Match], &['a', 'b'], 0, 0)?,
+            true
+        );
+        assert_eq!(
+            eval_depth(&[Char('a'), Head, Char('b'), Match], &['a', 'b'], 0, 0)?,
+            false
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Split(1, 1), // 0:
+                    Head,        // 1:
+                    Char('a'),   // 2:
+                    Jump(6),     // 3:
+                    Char('b'),   // 4:
+                    Char('c'),   // 5:
+                    Match,       // 6:
+                ],
+                &['a'],
+                0,
+                0
+            )?,
+            true
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Split(1, 4), // 0:
+                    Head,        // 1:
+                    Char('a'),   // 2:
+                    Jump(6),     // 3:
+                    Char('b'),   // 4:
+                    Char('c'),   // 5:
+                    Match,       // 6:
+                ],
+                &['b', 'c'],
+                0,
+                0
+            )?,
+            true
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Char('a'),   // 0:
+                    Split(2, 5), // 1:
+                    Head,        // 2:
+                    Char('b'),   // 3:
+                    Jump(6),     // 4:
+                    Char('d'),   // 5:
+                    Char('e'),   // 6:
+                    Match,       // 7:
+                ],
+                &['a', 'b'],
+                0,
+                0
+            )?,
+            false
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Char('a'),   // 0:
+                    Split(2, 5), // 1:
+                    Head,        // 2:
+                    Char('b'),   // 3:
+                    Jump(7),     // 4:
+                    Char('d'),   // 5:
+                    Char('e'),   // 6:
+                    Match,       // 7:
+                ],
+                &['a', 'd', 'e'],
                 0,
                 0
             )?,
