@@ -73,3 +73,57 @@ pub fn eval(inst: &[Instruction], line: &[char], is_depth: bool) -> Result<bool,
         eval_width(inst, line)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::Instruction::*;
+
+    #[test]
+    fn test_eval_depth() -> Result<(), EvalError> {
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), Char('b'), Char('c'), Match,],
+                &['a', 'b', 'c'],
+                0,
+                0
+            )?,
+            true
+        );
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), Char('b'), Char('c'), Match,],
+                &['a', 'b', 'c', 'd'],
+                0,
+                0
+            )?,
+            true
+        );
+        assert_eq!(eval_depth(&[Match], &[], 0, 0)?, true);
+        assert_eq!(eval_depth(&[Char('b')], &['a'], 0, 0)?, false);
+        assert_eq!(
+            eval_depth(&[Jump(2), Char('a'), Match], &['b'], 0, 0)?,
+            true
+        );
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), Split(2, 4), Char('b'), Char('c'), Match,],
+                &['a', 'b', 'c'],
+                0,
+                0
+            )?,
+            true
+        );
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), Split(2, 4), Char('b'), Char('c'), Match,],
+                &['a'],
+                0,
+                0
+            )?,
+            true
+        );
+
+        Ok(())
+    }
+}
