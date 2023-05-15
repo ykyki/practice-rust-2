@@ -269,13 +269,15 @@ mod tests {
         assert_eq!(
             eval_depth(
                 &[
-                    Split(1, 3), // 0:
-                    Char('a'),   // 1:
-                    Match,       // 2:
-                    Char('b'),   // 3:
-                    MatchEnd,    // 4:
+                    Char('a'),   // 0:
+                    Split(2, 4), // 1:
+                    Char('b'),   // 2:
+                    Jump(6),     // 3:
+                    Char('c'),   // 4:
+                    MatchEnd,    // 5:
+                    Match,       // 6:
                 ],
-                &['a', '1'],
+                &['a', 'b'],
                 0,
                 0
             )?,
@@ -284,17 +286,36 @@ mod tests {
         assert_eq!(
             eval_depth(
                 &[
-                    Split(1, 3), // 0:
-                    Char('a'),   // 1:
-                    Match,       // 2:
-                    Char('b'),   // 3:
-                    MatchEnd,    // 4:
+                    Char('a'),   // 0:
+                    Split(2, 4), // 1:
+                    Char('b'),   // 2:
+                    Jump(6),     // 3:
+                    Char('c'),   // 4:
+                    MatchEnd,    // 5:
+                    Match,       // 6:
                 ],
-                &['b', '1'],
+                &['a', 'c'],
                 0,
                 0
             )?,
             EvalResult::matched_if_end()
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Char('a'),   // 0:
+                    Split(2, 4), // 1:
+                    Char('b'),   // 2:
+                    Jump(6),     // 3:
+                    Char('c'),   // 4:
+                    MatchEnd,    // 5:
+                    Match,       // 6:
+                ],
+                &['a', 'd'],
+                0,
+                0
+            )?,
+            EvalResult::unmatched()
         );
 
         Ok(())

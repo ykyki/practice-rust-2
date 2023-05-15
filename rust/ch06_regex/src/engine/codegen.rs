@@ -44,6 +44,7 @@ impl Generator {
         match ast {
             AST::Char(c) => self.gen_char(*c)?,
             AST::Caret => self.gen_caret()?,
+            AST::Dollar => self.gen_dollar()?,
             AST::Or(e1, e2) => self.gen_or(e1, e2)?,
             AST::Plus(e) => self.gen_plus(e)?,
             AST::Star(e) => {
@@ -77,6 +78,13 @@ impl Generator {
 
     fn gen_caret(&mut self) -> Result<(), CodeGenError> {
         let inst = Instruction::Head;
+        self.insts.push(inst);
+        self.inc_pc()?;
+        Ok(())
+    }
+
+    fn gen_dollar(&mut self) -> Result<(), CodeGenError> {
+        let inst = Instruction::MatchEnd;
         self.insts.push(inst);
         self.inc_pc()?;
         Ok(())
@@ -242,6 +250,23 @@ mod tests {
                 Head,        // 3:
                 Char('b'),   // 4:
                 Char('c'),   // 5:
+                Match,       // 6:
+            ]
+        );
+        assert_eq!(get_code(&parse("a$")?)?, vec![Char('a'), MatchEnd, Match]);
+        assert_eq!(
+            get_code(&parse("a$b")?)?,
+            vec![Char('a'), MatchEnd, Char('b'), Match]
+        );
+        assert_eq!(
+            get_code(&parse("a(b|c$)")?)?,
+            vec![
+                Char('a'),   // 0:
+                Split(2, 4), // 1:
+                Char('b'),   // 2:
+                Jump(6),     // 3:
+                Char('c'),   // 4:
+                MatchEnd,    // 5:
                 Match,       // 6:
             ]
         );
