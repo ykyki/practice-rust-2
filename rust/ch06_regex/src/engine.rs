@@ -158,10 +158,12 @@ mod tests {
         assert_eq!(match_line("abc|def", "def")?, true);
         assert_eq!(match_line("abc|def", "123def")?, true);
 
-        assert_eq!(match_line("^abc", "abcdef")?, true);
+        assert_eq!(match_line("^abc", "abc")?, true);
         assert_eq!(match_line("^abc", "123abc")?, false);
+        assert_eq!(match_line("^abc", "abc123")?, true);
 
         assert_eq!(match_line("^^abc", "abc")?, true);
+        assert_eq!(match_line("^^abc", "123abc")?, false);
         assert_eq!(match_line("^^abc", "123abc")?, false);
 
         assert_eq!(match_line("(a|^b)c", "ac")?, true);
@@ -179,6 +181,31 @@ mod tests {
         assert_eq!(match_line("(^ab)?c", "abc")?, true);
         assert_eq!(match_line("(^ab)?c", "123c")?, true);
         assert_eq!(match_line("(^ab)?c", "123abc")?, true);
+
+        assert_eq!(match_line("abc$", "abc")?, true);
+        assert_eq!(match_line("abc$", "abc123")?, false);
+        assert_eq!(match_line("abc$", "123abc")?, true);
+
+        assert_eq!(match_line("abc$$", "abc")?, true);
+        assert_eq!(match_line("abc$$", "abc123")?, false);
+        assert_eq!(match_line("abc$$", "123abc")?, true);
+
+        assert_eq!(match_line("a(b$|c)", "ab")?, true);
+        assert_eq!(match_line("a(b$|c)", "ac")?, true);
+        assert_eq!(match_line("a(b$|c)", "ab123")?, false);
+        assert_eq!(match_line("a(b$|c)", "ac123")?, true);
+
+        assert_eq!(match_line("a(b$|c)x", "abx")?, false);
+        assert_eq!(match_line("a(b$|c)x", "acx")?, true);
+        assert_eq!(match_line("a(b$|c)x", "abx123")?, false);
+        assert_eq!(match_line("a(b$|c)x", "acx123")?, true);
+
+        assert_eq!(match_line("^abc$", "ab")?, false);
+        assert_eq!(match_line("^abc$", "bc")?, false);
+        assert_eq!(match_line("^abc$", "ac")?, false);
+        assert_eq!(match_line("^abc$", "abc")?, true);
+        assert_eq!(match_line("^abc$", "123abc")?, false);
+        assert_eq!(match_line("^abc$", "abc123")?, false);
 
         Ok(())
     }
