@@ -16,6 +16,7 @@ pub enum Instruction {
     Jump(usize),
     Split(usize, usize),
     Head,
+    MatchEnd,
 }
 
 impl Display for Instruction {
@@ -26,6 +27,7 @@ impl Display for Instruction {
             Instruction::Jump(addr) => write!(f, "jump {:>04}", addr),
             Instruction::Split(addr1, addr2) => write!(f, "split {:>04}, {:>04}", addr1, addr2),
             Instruction::Head => write!(f, "head"),
+            Instruction::MatchEnd => write!(f, "match_end"),
         }
     }
 }
@@ -35,6 +37,7 @@ impl Display for Instruction {
 struct EvalResult {
     matched: bool,
     should_be_head: bool,
+    should_be_end: bool,
 }
 
 impl EvalResult {
@@ -42,18 +45,35 @@ impl EvalResult {
         Self {
             matched: true,
             should_be_head: false,
+            should_be_end: false,
         }
     }
     fn unmatched() -> Self {
         Self {
             matched: false,
             should_be_head: false,
+            should_be_end: false,
         }
     }
     fn matched_if_head() -> Self {
         Self {
             matched: true,
             should_be_head: true,
+            should_be_end: false,
+        }
+    }
+    fn matched_if_end() -> Self {
+        Self {
+            matched: true,
+            should_be_head: false,
+            should_be_end: true,
+        }
+    }
+    fn matched_if_head_end() -> Self {
+        Self {
+            matched: true,
+            should_be_head: true,
+            should_be_end: true,
         }
     }
 
@@ -63,17 +83,20 @@ impl EvalResult {
                 return Self {
                     matched: true,
                     should_be_head: self.should_be_head && other.should_be_head,
+                    should_be_end: self.should_be_end && other.should_be_end,
                 };
             } else {
                 return Self {
                     matched: true,
                     should_be_head: self.should_be_head,
+                    should_be_end: self.should_be_end,
                 };
             }
         } else {
             return Self {
                 matched: other.matched,
                 should_be_head: other.should_be_head,
+                should_be_end: other.should_be_end,
             };
         }
     }

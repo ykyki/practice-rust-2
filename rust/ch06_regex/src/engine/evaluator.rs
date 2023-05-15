@@ -55,6 +55,13 @@ fn eval_depth(
                     Ok(EvalResult::matched())
                 };
             }
+            Instruction::MatchEnd => {
+                return if should_be_head {
+                    Ok(EvalResult::matched_if_head_end())
+                } else {
+                    Ok(EvalResult::matched_if_end())
+                };
+            }
             Instruction::Jump(addr) => {
                 pc = *addr;
             }
@@ -221,6 +228,73 @@ mod tests {
                 0
             )?,
             EvalResult::matched()
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Char('a'), // 0:
+                    MatchEnd,  // 1:
+                ],
+                &['a', 'b'],
+                0,
+                0
+            )?,
+            EvalResult::matched_if_end()
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Char('a'), // 0:
+                    MatchEnd,  // 1:
+                ],
+                &['c'],
+                0,
+                0
+            )?,
+            EvalResult::unmatched()
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Head,      // 0:
+                    Char('a'), // 1:
+                    MatchEnd,  // 2:
+                ],
+                &['a', 'b'],
+                0,
+                0
+            )?,
+            EvalResult::matched_if_head_end()
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Split(1, 3), // 0:
+                    Char('a'),   // 1:
+                    Match,       // 2:
+                    Char('b'),   // 3:
+                    MatchEnd,    // 4:
+                ],
+                &['a', '1'],
+                0,
+                0
+            )?,
+            EvalResult::matched()
+        );
+        assert_eq!(
+            eval_depth(
+                &[
+                    Split(1, 3), // 0:
+                    Char('a'),   // 1:
+                    Match,       // 2:
+                    Char('b'),   // 3:
+                    MatchEnd,    // 4:
+                ],
+                &['b', '1'],
+                0,
+                0
+            )?,
+            EvalResult::matched_if_end()
         );
 
         Ok(())
