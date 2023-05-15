@@ -56,10 +56,16 @@ fn eval_depth(
                 };
             }
             Instruction::MatchEnd => {
+                let is_end = line.get(sp).is_none();
+
+                if !is_end {
+                    return Ok(EvalResult::unmatched());
+                }
+
                 return if should_be_head {
-                    Ok(EvalResult::matched_if_head_end())
+                    Ok(EvalResult::matched_if_head())
                 } else {
-                    Ok(EvalResult::matched_if_end())
+                    Ok(EvalResult::matched())
                 };
             }
             Instruction::Jump(addr) => {
@@ -230,27 +236,15 @@ mod tests {
             EvalResult::matched()
         );
         assert_eq!(
-            eval_depth(
-                &[
-                    Char('a'), // 0:
-                    MatchEnd,  // 1:
-                ],
-                &['a', 'b'],
-                0,
-                0
-            )?,
-            EvalResult::matched_if_end()
+            eval_depth(&[Char('a'), MatchEnd,], &['a'], 0, 0)?,
+            EvalResult::matched()
         );
         assert_eq!(
-            eval_depth(
-                &[
-                    Char('a'), // 0:
-                    MatchEnd,  // 1:
-                ],
-                &['c'],
-                0,
-                0
-            )?,
+            eval_depth(&[Char('a'), MatchEnd,], &['a', 'b'], 0, 0)?,
+            EvalResult::unmatched()
+        );
+        assert_eq!(
+            eval_depth(&[Char('a'), MatchEnd,], &['c'], 0, 0)?,
             EvalResult::unmatched()
         );
         assert_eq!(
@@ -260,11 +254,11 @@ mod tests {
                     Char('a'), // 1:
                     MatchEnd,  // 2:
                 ],
-                &['a', 'b'],
+                &['a'],
                 0,
                 0
             )?,
-            EvalResult::matched_if_head_end()
+            EvalResult::matched_if_head()
         );
         assert_eq!(
             eval_depth(
@@ -298,7 +292,7 @@ mod tests {
                 0,
                 0
             )?,
-            EvalResult::matched_if_end()
+            EvalResult::matched()
         );
         assert_eq!(
             eval_depth(
