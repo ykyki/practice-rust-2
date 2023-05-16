@@ -156,6 +156,9 @@ mod tests {
 
     #[test]
     fn test_match_line() -> Result<(), DynError> {
+        assert_eq!(match_line(r"\\", r"\")?, true);
+        assert_eq!(match_line(r"\.\+\(\)\|\+\*\?\^\$", r".+()|+*?^$")?, true);
+
         assert_eq!(match_line("abc|def", "abc")?, true);
         assert_eq!(match_line("abc|def", "def")?, true);
         assert_eq!(match_line("abc|def", "123def")?, true);
