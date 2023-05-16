@@ -48,6 +48,14 @@ fn eval_depth(
                     return Ok(EvalResult::unmatched());
                 }
             }
+            Instruction::AnyChar => {
+                if line.get(sp).is_some() {
+                    safe_add(&mut pc, &1, || EvalError::PCOverFlow)?;
+                    safe_add(&mut sp, &1, || EvalError::SPOverFlow)?;
+                } else {
+                    return Ok(EvalResult::unmatched());
+                }
+            }
             Instruction::Match => {
                 return if should_be_head {
                     Ok(EvalResult::matched_if_head())
@@ -137,6 +145,64 @@ mod tests {
         );
         assert_eq!(
             eval_depth(&[Jump(2), Char('a'), Match], &['b'], 0, 0)?,
+            EvalResult::matched(),
+        );
+        assert_eq!(
+            eval_depth(&[Char('a'), AnyChar, Char('b'), Match,], &['a', 'b'], 0, 0)?,
+            EvalResult::unmatched(),
+        );
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), AnyChar, Char('b'), Match,],
+                &['a', 'a', 'b'],
+                0,
+                0
+            )?,
+            EvalResult::matched(),
+        );
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), AnyChar, Char('b'), Match,],
+                &['a', 'b', 'b'],
+                0,
+                0
+            )?,
+            EvalResult::matched(),
+        );
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), AnyChar, Char('b'), Match,],
+                &['a', 'c', 'b'],
+                0,
+                0
+            )?,
+            EvalResult::matched(),
+        );
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), AnyChar, Char('b'), Match,],
+                &['a', 'あ', 'b'],
+                0,
+                0
+            )?,
+            EvalResult::matched(),
+        );
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), AnyChar, Char('b'), Match,],
+                &['a', '𐂂', 'b'],
+                0,
+                0
+            )?,
+            EvalResult::matched(),
+        );
+        assert_eq!(
+            eval_depth(
+                &[Char('a'), AnyChar, Char('b'), Match,],
+                &['a', '💥', 'b'],
+                0,
+                0
+            )?,
             EvalResult::matched(),
         );
         assert_eq!(

@@ -12,6 +12,7 @@ mod parser;
 #[cfg_attr(test, derive(PartialEq, Eq))]
 pub enum Instruction {
     Char(char),
+    AnyChar,
     Match,
     Jump(usize),
     Split(usize, usize),
@@ -23,6 +24,7 @@ impl Display for Instruction {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Instruction::Char(c) => write!(f, "char {}", c),
+            Instruction::AnyChar => write!(f, "any_char"),
             Instruction::Match => write!(f, "match"),
             Instruction::Jump(addr) => write!(f, "jump {:>04}", addr),
             Instruction::Split(addr1, addr2) => write!(f, "split {:>04}, {:>04}", addr1, addr2),
@@ -157,6 +159,24 @@ mod tests {
         assert_eq!(match_line("abc|def", "abc")?, true);
         assert_eq!(match_line("abc|def", "def")?, true);
         assert_eq!(match_line("abc|def", "123def")?, true);
+
+        assert_eq!(match_line("a.b", "axb")?, true);
+        assert_eq!(match_line("a.b", "aab")?, true);
+        assert_eq!(match_line("a.b", "abb")?, true);
+        assert_eq!(match_line("a.b", "aあb")?, true);
+        assert_eq!(match_line("a.b", "a\\b")?, true);
+        assert_eq!(match_line("a.b", "a b")?, true);
+        assert_eq!(match_line("a.b", "a　b")?, true);
+        assert_eq!(match_line("a.b", "a️💣b")?, false); // TODO: 1文字として扱うべき?
+        assert_eq!(match_line("a.b", "a㊙️b")?, false); // TODO: 1文字として扱うべき?
+        assert_eq!(match_line("a.b", "a\nb")?, true); // TODO: 仕様によってはfalseになる
+        assert_eq!(match_line("a.b", "ab")?, false);
+
+        assert_eq!(match_line("a..b", "axyb")?, true);
+        assert_eq!(match_line("a..b", "axb")?, false);
+
+        assert_eq!(match_line("あ.?い", "あたい")?, true);
+        assert_eq!(match_line("あ.?い", "あい")?, true);
 
         assert_eq!(match_line("^abc", "abc")?, true);
         assert_eq!(match_line("^abc", "123abc")?, false);

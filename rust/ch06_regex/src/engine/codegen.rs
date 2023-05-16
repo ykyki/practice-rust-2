@@ -43,6 +43,7 @@ impl Generator {
     fn gen_expr(&mut self, ast: &AST) -> Result<(), CodeGenError> {
         match ast {
             AST::Char(c) => self.gen_char(*c)?,
+            AST::Period => self.gen_period()?,
             AST::Caret => self.gen_caret()?,
             AST::Dollar => self.gen_dollar()?,
             AST::Or(e1, e2) => self.gen_or(e1, e2)?,
@@ -85,6 +86,13 @@ impl Generator {
 
     fn gen_dollar(&mut self) -> Result<(), CodeGenError> {
         let inst = Instruction::MatchEnd;
+        self.insts.push(inst);
+        self.inc_pc()?;
+        Ok(())
+    }
+
+    fn gen_period(&mut self) -> Result<(), CodeGenError> {
+        let inst = Instruction::AnyChar;
         self.insts.push(inst);
         self.inc_pc()?;
         Ok(())
@@ -209,6 +217,10 @@ mod tests {
                 Char('c'),
                 Match
             ]
+        );
+        assert_eq!(
+            get_code(&parse("a.b")?)?,
+            vec![Char('a'), AnyChar, Char('b'), Match]
         );
         assert_eq!(
             get_code(&parse("ab(de)?")?)?,
