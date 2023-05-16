@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::{error::Error, fmt::Display};
 
 use super::EvalResult;
@@ -9,7 +10,7 @@ pub enum EvalError {
     PCOverFlow,
     SPOverFlow,
     InvalidPC,
-    // InvalidContext,
+    InvalidContext,
 }
 
 impl Display for EvalError {
@@ -56,6 +57,14 @@ fn eval_depth(
                     return Ok(EvalResult::unmatched());
                 }
             }
+            Instruction::Head => {
+                if sp != 0 {
+                    return Ok(EvalResult::unmatched());
+                } else {
+                    should_be_head = true;
+                    safe_add(&mut pc, &1, || EvalError::PCOverFlow)?;
+                }
+            }
             Instruction::Match => {
                 return if should_be_head {
                     Ok(EvalResult::matched_if_head())
@@ -84,20 +93,123 @@ fn eval_depth(
                     eval_depth(inst, line, *addr1, sp)?.merge(&eval_depth(inst, line, *addr2, sp)?)
                 );
             }
-            Instruction::Head => {
-                if sp != 0 {
-                    return Ok(EvalResult::unmatched());
-                } else {
-                    should_be_head = true;
-                    safe_add(&mut pc, &1, || EvalError::PCOverFlow)?;
-                }
-            }
         }
     }
 }
 
-fn eval_width(_inst: &[Instruction], _line: &[char]) -> Result<EvalResult, EvalError> {
-    todo!()
+fn pop_ctx(
+    pc: &mut usize,
+    sp: &mut usize,
+    should_be_head: &mut bool,
+    ctx: &mut VecDeque<(usize, usize, bool)>,
+) -> Result<(), EvalError> {
+    if let Some((p, s, sh)) = ctx.pop_back() {
+        *pc = p;
+        *sp = s;
+        *should_be_head = sh;
+        Ok(())
+    } else {
+        Err(EvalError::InvalidContext)
+    }
+}
+
+fn eval_width(inst: &[Instruction], line: &[char]) -> Result<EvalResult, EvalError> {
+    let mut ctx = VecDeque::new();
+    let mut pc = 0;
+    let mut sp = 0;
+    let mut shuould_be_head = false;
+
+    loop {
+        let next = if let Some(i) = inst.get(pc) {
+            i
+        } else {
+            return Err(EvalError::InvalidPC);
+        };
+
+        match next {
+            Instruction::Char(c) => {
+                if let Some(sp_c) = line.get(sp) {
+                    if c == sp_c {
+                        safe_add(&mut pc, &1, || EvalError::PCOverFlow)?;
+                        safe_add(&mut sp, &1, || EvalError::SPOverFlow)?;
+                    } else {
+                        if ctx.is_empty() {
+                            return Ok(EvalResult::unmatched());
+                        } else {
+                            pop_ctx(&mut pc, &mut sp, &mut shuould_be_head, &mut ctx)?;
+                        }
+                    }
+                } else {
+                    if ctx.is_empty() {
+                        return Ok(EvalResult::unmatched());
+                    } else {
+                        pop_ctx(&mut pc, &mut sp, &mut shuould_be_head, &mut ctx)?;
+                    }
+                }
+            }
+            Instruction::AnyChar => {
+                if line.get(sp).is_some() {
+                    safe_add(&mut pc, &1, || EvalError::PCOverFlow)?;
+                    safe_add(&mut sp, &1, || EvalError::SPOverFlow)?;
+                } else {
+                    if ctx.is_empty() {
+                        return Ok(EvalResult::unmatched());
+                    } else {
+                        pop_ctx(&mut pc, &mut sp, &mut shuould_be_head, &mut ctx)?;
+                    }
+                }
+            }
+            Instruction::Head => {
+                if sp != 0 {
+                    if ctx.is_empty() {
+                        return Ok(EvalResult::unmatched());
+                    } else {
+                        pop_ctx(&mut pc, &mut sp, &mut shuould_be_head, &mut ctx)?;
+                    }
+                } else {
+                    shuould_be_head = true;
+                    safe_add(&mut pc, &1, || EvalError::PCOverFlow)?;
+                }
+            }
+            Instruction::Match => {
+                return if shuould_be_head {
+                    Ok(EvalResult::matched_if_head())
+                } else {
+                    Ok(EvalResult::matched())
+                };
+            }
+            Instruction::MatchEnd => {
+                let is_end = line.get(sp).is_none();
+
+                if !is_end {
+                    if ctx.is_empty() {
+                        return Ok(EvalResult::unmatched());
+                    } else {
+                        pop_ctx(&mut pc, &mut sp, &mut shuould_be_head, &mut ctx)?;
+                    }
+                } else {
+                    return if shuould_be_head {
+                        Ok(EvalResult::matched_if_head())
+                    } else {
+                        Ok(EvalResult::matched())
+                    };
+                }
+            }
+            Instruction::Jump(addr) => {
+                pc = *addr;
+            }
+            Instruction::Split(addr1, addr2) => {
+                pc = *addr1;
+                ctx.push_back((*addr2, sp, shuould_be_head));
+                continue;
+            }
+        }
+
+        if !ctx.is_empty() {
+            ctx.push_back((pc, sp, shuould_be_head));
+            pop_ctx(&mut pc, &mut sp, &mut shuould_be_head, &mut ctx)?;
+        }
+    }
 }
 
 pub(super) fn eval(
@@ -119,10 +231,11 @@ mod tests {
     use crate::engine::Instruction::*;
 
     #[test]
-    fn test_eval_depth() -> Result<(), EvalError> {
+    fn test_eval() -> Result<(), EvalError> {
         macro_rules! assert_eval_result {
             ($inst:expr, $line:expr, $result:expr) => {
-                assert_eq!(eval_depth(&$inst, &$line, 0, 0)?, $result);
+                assert_eq!(eval(&$inst, &$line, true)?, $result);
+                assert_eq!(eval(&$inst, &$line, false)?, $result);
             };
         }
 

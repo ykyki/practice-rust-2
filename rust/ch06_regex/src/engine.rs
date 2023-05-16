@@ -114,6 +114,7 @@ pub(crate) fn match_line(expr: &str, line: &str) -> Result<bool, DynError> {
         let partial_line = line[i..].chars().collect::<Vec<_>>();
 
         let result = eval(&code, &partial_line, true)?;
+        // let result = eval(&code, &partial_line, false)?;
         if result.matched {
             if !result.should_be_head || i == 0 {
                 return Ok(true);
