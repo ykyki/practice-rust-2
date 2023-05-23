@@ -137,6 +137,7 @@ mod tests {
         assert!(do_matching("*b", "bbb", true).is_err());
         assert!(do_matching("|b", "bbb", true).is_err());
         assert!(do_matching("?b", "bbb", true).is_err());
+        // assert!(do_matching(r"\\\", "bbb", true).is_err()); // TODO errになるべき?
 
         // パース成功、マッチ成功
         assert!(do_matching("abc|def", "def", true).unwrap());
@@ -181,6 +182,18 @@ mod tests {
 
         assert_eq!(match_line("あ.?い", "あたい")?, true);
         assert_eq!(match_line("あ.?い", "あい")?, true);
+
+        assert_eq!(match_line("a++", "")?, false);
+        assert_eq!(match_line("a++", "a")?, true);
+        assert_eq!(match_line("a++", "aa")?, true);
+
+        assert_eq!(match_line("a**", "")?, false); // TODO: trueになるべき?
+        assert_eq!(match_line("a**", "a")?, true);
+        assert_eq!(match_line("a**", "aa")?, true);
+
+        assert_eq!(match_line("a+*", "")?, false); // TODO: trueになるべき?
+        assert_eq!(match_line("a+*", "a")?, true);
+        assert_eq!(match_line("a+*", "aa")?, true);
 
         assert_eq!(match_line("^abc", "abc")?, true);
         assert_eq!(match_line("^abc", "123abc")?, false);
