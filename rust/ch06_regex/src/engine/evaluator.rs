@@ -103,7 +103,7 @@ fn pop_ctx(
     should_be_head: &mut bool,
     ctx: &mut VecDeque<(usize, usize, bool)>,
 ) -> Result<(), EvalError> {
-    if let Some((p, s, sh)) = ctx.pop_back() {
+    if let Some((p, s, sh)) = ctx.pop_front() {
         *pc = p;
         *sp = s;
         *should_be_head = sh;
@@ -205,10 +205,10 @@ fn eval_width(inst: &[Instruction], line: &[char]) -> Result<EvalResult, EvalErr
             }
         }
 
-        if !ctx.is_empty() {
-            ctx.push_back((pc, sp, shuould_be_head));
-            pop_ctx(&mut pc, &mut sp, &mut shuould_be_head, &mut ctx)?;
-        }
+        // if !ctx.is_empty() {
+        //     ctx.push_back((pc, sp, shuould_be_head));
+        //     pop_ctx(&mut pc, &mut sp, &mut shuould_be_head, &mut ctx)?;
+        // }
     }
 }
 
